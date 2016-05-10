@@ -1,0 +1,118 @@
+package edu.upc.eetac.dsa.beeter.client;
+
+import android.util.Log;
+
+import com.google.gson.Gson;
+
+import org.glassfish.jersey.client.ClientConfig;
+
+import java.util.List;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import edu.upc.eetac.dsa.beeter.client.entity.AuthToken;
+import edu.upc.eetac.dsa.beeter.client.entity.Link;
+import edu.upc.eetac.dsa.beeter.client.entity.Root;
+import edu.upc.eetac.dsa.beeter.client.entity.Sting;
+
+/**
+ * Created by root on 14/04/16.
+ */
+public class BeeterClient {
+    private final static String BASE_URI = "http://192.168.1.101:8080/beeter";
+    private static BeeterClient instance;
+    private Root root;
+    private ClientConfig clientConfig = null;
+    private Client client = null;
+    private AuthToken authToken = null;
+
+    private final static String TAG = BeeterClient.class.toString();
+
+    private BeeterClient() {
+        clientConfig = new ClientConfig();
+        client = ClientBuilder.newClient(clientConfig);
+        loadRoot();
+    }
+
+    public static BeeterClient getInstance() {
+        if (instance == null)
+            instance = new BeeterClient();
+        return instance;
+    }
+
+    private void loadRoot() {
+        WebTarget target = client.target(BASE_URI);
+        Response response = target.request().get();
+
+        String json = response.readEntity(String.class);
+        root = (new Gson()).fromJson(json, Root.class);
+    }
+
+    public Root getRoot() {
+        return root;
+    }
+
+    public final static Link getLink(List<Link> links, String rel){
+        for(Link link : links){
+            if(link.getRels().contains(rel)) {
+                return link;
+            }
+        }
+        return null;
+    }
+
+    public boolean login(String userid, String password) {
+        String loginUri = getLink(root.getLinks(), "login").getUri().toString();
+        WebTarget target = client.target(loginUri);
+        Form form = new Form();
+        form.param("login", "spongebob");
+        form.param("password", "1234");
+        String json = target.request().post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
+        authToken = (new Gson()).fromJson(json, AuthToken.class);
+        Log.d(TAG, json);
+        return true;
+    }
+
+    public String getStings(String uri) throws BeeterClientException {
+        if(uri==null){
+            uri = getLink(authToken.getLinks(), "current-stings").getUri().toString();
+        }
+        WebTarget target = client.target(uri);
+        Response response = target.request().get();
+        if (response.getStatus() == Response.Status.OK.getStatusCode())
+            return response.readEntity(String.class);
+        else
+            throw new BeeterClientException(response.readEntity(String.class));
+    }
+
+    public String getSting(String uri) throws BeeterClientException {
+        WebTarget target = client.target(uri);
+        Response response = target.request().get();
+        if (response.getStatus() == Response.Status.OK.getStatusCode())
+            return response.readEntity(String.class);
+        else
+            throw new BeeterClientException(response.readEntity(String.class));
+    }
+
+    public String createSting(String subject, String content) throws BeeterClientException {
+        String loginUri = getLink(root.getLinks(), "create-sting").getUri().toString();
+        WebTarget target = client.target(loginUri);
+        Form form = new Form();
+        form.param("subject", subject);
+        form.param("content", content);
+        String json = target.request().header("X-Auth-Token", authToken).post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
+        //if (response.getStatus() == Response.Status.OK.getStatusCode())
+        //    return response.readEntity(String.class);
+        //else
+        //    throw new BeeterClientException(response.readEntity(String.class));
+        Log.d(TAG, json);
+        return json;
+    }
+}
+

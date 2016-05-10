@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="textsubjectdetail" type="id">Asunto</item>
+    <item name="textcontentdetail" type="id">Contenido</item>
+    <item name="textcreatordetail" type="id">Creador</item>
+    <item name="textcreationtimestampdetail" type="id">Fecha de creación</item>
+    <item name="textlastModifieddetail" type="id">Fecha de modificación</item>
+    <item name="etSubject" type="id">Asunto</item>
+    <item name="etContent" type="id">Contenido</item>
+</resources>
